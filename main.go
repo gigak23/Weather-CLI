@@ -8,7 +8,10 @@ import (
 	"log"
 	"net/http"
 	"os"
+<<<<<<< HEAD
 	"strconv"
+=======
+>>>>>>> 09bb94d0c5926101856e16520f5f95c2a759e8e5
 	"strings"
 	"time"
 
@@ -31,7 +34,10 @@ type Weather struct {
 	}
 	Forecast struct {
 		Forecastday []struct {
+<<<<<<< HEAD
 			Date  string `json:"date"`
+=======
+>>>>>>> 09bb94d0c5926101856e16520f5f95c2a759e8e5
 			Astro struct {
 				Sunrise string `json:"sunrise"`
 				Sunset  string `json:"sunset"`
@@ -58,6 +64,7 @@ func main() {
 	} else {
 		q = "Los_Angeles"
 	}
+<<<<<<< HEAD
 	weatherReport()
 
 }
@@ -65,6 +72,9 @@ func main() {
 // Get weather data
 func weatherReport() {
 	res, err := http.Get("https://api.weatherapi.com/v1/forecast.json?key=d48c3d2b3bad49b7af7180920252603&q=" + q + "&days=7&aqi=no&alerts=no")
+=======
+	res, err := http.Get("http://api.weatherapi.com/v1/forecast.json?key=d48c3d2b3bad49b7af7180920252603&q=" + q + "&days=7&aqi=no&alerts=no")
+>>>>>>> 09bb94d0c5926101856e16520f5f95c2a759e8e5
 
 	if err != nil {
 		panic(err)
@@ -123,6 +133,7 @@ func outputData(body []byte) {
 
 	for day := range w.Forecast.Forecastday {
 
+<<<<<<< HEAD
 		d, hours, sun := w.Forecast.Forecastday[day].Date, w.Forecast.Forecastday[day].Hour, w.Forecast.Forecastday[day].Astro
 		weekDay := dayOfTheWeek(d)
 		fmt.Println()
@@ -130,6 +141,19 @@ func outputData(body []byte) {
 		fmt.Println()
 		for _, hour := range hours {
 
+=======
+		hours, sun := w.Forecast.Forecastday[day].Hour, w.Forecast.Forecastday[day].Astro
+
+		fmt.Println()
+
+		fmt.Println("Day:", day)
+		fmt.Println()
+		s := fmt.Sprintf("\nSunrise:%s\nSunset:%s\n\n", sun.Sunrise, sun.Sunset)
+		color.Magenta(s)
+
+		for _, hour := range hours {
+
+>>>>>>> 09bb94d0c5926101856e16520f5f95c2a759e8e5
 			date := time.Unix(hour.TimeEpoch, 0).In(locTZ)
 
 			if date.Before(now) {
