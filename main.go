@@ -15,6 +15,18 @@ import (
 	"github.com/fatih/color"
 )
 
+/*
+
+GOAL: FILTER SPECIFIC CITIES BY COUNTRY IN CASE OF DUPLICATE CITIES
+
+*/
+
+// Global query value
+var q string
+
+// Global lang value
+var ql string
+
 // Weather data
 type Weather struct {
 	Location struct {
@@ -37,6 +49,7 @@ type Weather struct {
 				Sunset  string `json:"sunset"`
 			}
 			Hour []struct {
+				Uv           float64 `json:"uv"`
 				TimeEpoch    int64   `json:"time_epoch"`
 				TempF        float64 `json:"temp_f"`
 				ChanceOfRain float64 `json:"chance_of_rain"`
@@ -47,9 +60,6 @@ type Weather struct {
 		} `json:"forecastday"`
 	} `json:"forecast"`
 }
-
-// Global query value
-var q string
 
 func main() {
 
@@ -64,7 +74,7 @@ func main() {
 
 // Get weather data
 func weatherReport() {
-	res, err := http.Get("https://api.weatherapi.com/v1/forecast.json?key=d48c3d2b3bad49b7af7180920252603&q=" + q + "&days=7&aqi=no&alerts=no")
+	res, err := http.Get("https://api.weatherapi.com/v1/forecast.json?key=d48c3d2b3bad49b7af7180920252603&q=" + q + "&days=7&aqi=no&alerts=yes&lang=" + ql)
 
 	if err != nil {
 		panic(err)
@@ -109,7 +119,7 @@ func outputData(body []byte) {
 	now := time.Now().In(locTZ)
 
 	d := "7-day Forecast"
-	f := fmt.Sprintf("%s\n", d)
+	f := fmt.Sprintf("\n%s\n", d)
 	color.Cyan(f)
 
 	fmt.Printf(
@@ -166,42 +176,41 @@ func outputData(body []byte) {
 				log.Fatal("Time cannot be parsed")
 			}
 
-			var output string
-			if parsedSunriseTime.Hour() == date.Hour() {
-				output = fmt.Sprintf(
-					"%s - %.0fF, %.0f%%, %s\nSunrise: %s",
-					fDate,
-					hour.TempF,
-					hour.ChanceOfRain,
-					hour.Condition.Text,
-					parsedSunriseTime.Format("15:04"),
-				)
-			} else if parsedSunsetTime.Hour() == date.Hour() {
-				output = fmt.Sprintf(
-					"%s - %.0fF, %.0f%%, %s\nSunset: %s",
-					fDate,
-					hour.TempF,
-					hour.ChanceOfRain,
-					hour.Condition.Text,
-					parsedSunsetTime.Format("15:04"),
-				)
-			} else {
-				output = fmt.Sprintf(
-					"%s - %.0fF, %.0f%%, %s\n",
-					fDate,
-					hour.TempF,
-					hour.ChanceOfRain,
-					hour.Condition.Text,
-				)
+			uvText := "UV-Index: N/A"
+			if hour.Uv > 0 {
+				uvText = uvIndex(hour.Uv)
 			}
 
-			if hour.ChanceOfRain >= 20 && hour.ChanceOfRain < 70 {
-				color.Yellow(output)
-			} else if hour.ChanceOfRain > 70 {
-				color.Red(output)
+			output := fmt.Sprintf(
+				"%s - %.0fF, %.0f%%, %s, %s",
+				fDate,
+				hour.TempF,
+				hour.ChanceOfRain,
+				hour.Condition.Text,
+				uvText,
+			)
+
+			// Display weather report with sunrise time
+			if parsedSunriseTime.Hour() == date.Hour() {
+
+				// Output normal weather report
+				chanceOfRain(output, hour.ChanceOfRain)
+
+				color.RGB(255, 165, 0).Println("Sunrise: " + parsedSunriseTime.Format("15:04"))
+
+				// Display weather report wtih sunset time
+			} else if parsedSunsetTime.Hour() == date.Hour() {
+
+				// Output normal weather report
+				chanceOfRain(output, hour.ChanceOfRain)
+
+				color.RGB(160, 32, 240).Println("Sunset: " + parsedSunsetTime.Format("15:04"))
+
 			} else {
-				color.Green(output)
+				// Output normal weather report
+				chanceOfRain(output, hour.ChanceOfRain)
 			}
+
 		}
 	}
 }
@@ -214,16 +223,20 @@ func validateArgs() bool {
 // Set the city to gather data from
 func setQueryValue() {
 	cityFlagCMD := flag.NewFlagSet("city", flag.ExitOnError)
+	langFlagCMD := flag.NewFlagSet("lang", flag.ExitOnError)
 	cityData := cityFlagCMD.String("data", "", "City Forecast")
+	langData := langFlagCMD.String("data", "", "Lang Code")
+
+	// Gets city name
 	switch os.Args[1] {
 	case "city":
-		err := cityFlagCMD.Parse(os.Args[2:])
+		err := cityFlagCMD.Parse(os.Args[2:3])
 		if err != nil {
-			fmt.Println("Cannot parse argument")
-			panic(err)
+			log.Fatal(err)
 		}
 	default:
 		*cityData = "Los_Angeles"
+
 	}
 	if cityFlagCMD.Parsed() {
 		if *cityData == "" {
@@ -231,6 +244,25 @@ func setQueryValue() {
 		}
 		q = *cityData
 	}
+
+	// Gets language
+	switch os.Args[3] {
+	case "lang":
+		err := langFlagCMD.Parse(os.Args[4:])
+		if err != nil {
+			log.Fatal(err)
+		}
+	default:
+		*langData = "en"
+	}
+
+	if langFlagCMD.Parsed() {
+		if *langData == "" {
+			os.Exit(1)
+		}
+		ql = *langData
+	}
+
 }
 
 // Find day of the week
@@ -279,4 +311,37 @@ func dayOfTheWeek(date string) string {
 
 	return weekDay
 
+}
+
+// Specify color for UV-Index
+func uvIndex(uv float64) string {
+	var uvString string
+	f := strconv.FormatFloat(uv, 'f', 1, 64)
+	if uv <= 2 {
+		uvString = color.GreenString("UV-Index: " + f)
+	} else if uv >= 3 && uv <= 5 {
+		uvString = color.HiWhiteString("UV-Index: " + f)
+	} else if uv >= 6 && uv <= 7 {
+		uvString = color.YellowString("UV-Index: " + f)
+	} else if uv >= 8 && uv <= 10 {
+		uvString = color.RedString("UV-Index: " + f)
+	} else if uv >= 11 {
+		uvString = color.BlueString("UV-Index: " + f)
+	}
+
+	return uvString
+}
+
+// Outputs line of certain color based on chance of rain
+func chanceOfRain(output string, rain float64) {
+
+	output = strings.TrimSpace(output)
+
+	if rain >= 20 && rain < 70 {
+		fmt.Println(color.YellowString(output))
+	} else if rain > 70 {
+		fmt.Println(color.RedString(output))
+	} else {
+		fmt.Println(color.GreenString(output))
+	}
 }
