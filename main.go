@@ -67,6 +67,7 @@ func main() {
 		setQueryValue()
 	} else {
 		q = "Los_Angeles"
+		ql = "en"
 	}
 	weatherReport()
 
@@ -217,8 +218,12 @@ func outputData(body []byte) {
 
 // Check for valid number of command line arguments
 func validateArgs() bool {
+	fmt.Println(len(os.Args))
 	return len(os.Args) >= 2
 }
+
+// if length of os.Args is 3 check if it is lang or city
+// if length of os.Args is 5 do normal check
 
 // Set the city to gather data from
 func setQueryValue() {
@@ -227,42 +232,84 @@ func setQueryValue() {
 	cityData := cityFlagCMD.String("data", "", "City Forecast")
 	langData := langFlagCMD.String("data", "", "Lang Code")
 
-	// Gets city name
-	switch os.Args[1] {
-	case "city":
-		err := cityFlagCMD.Parse(os.Args[2:3])
-		if err != nil {
-			log.Fatal(err)
+	// Cecks number of CMD arguments
+	switch len(os.Args) {
+
+	// Cheks to query lang or city if args length is 3
+	case 3:
+		switch os.Args[1] {
+		case "city":
+			if err := cityFlagCMD.Parse(os.Args[2:3]); err != nil {
+				log.Println("Cannot parse cmd flag", err)
+			}
+
+		case "lang":
+			if err := langFlagCMD.Parse(os.Args[2:3]); err != nil {
+				log.Println("Cannot parse cmd flag", err)
+			}
+		default:
+			*cityData = "Los_Angeles"
+			*langData = "en"
 		}
-	default:
-		*cityData = "Los_Angeles"
+
+		if cityFlagCMD.Parsed() {
+			if *cityData == "" {
+				os.Exit(1)
+			}
+			q = *cityData
+			ql = "en"
+		}
+		if langFlagCMD.Parsed() {
+			if *langData == "" {
+				os.Exit(1)
+			}
+			ql = *langData
+			q = "Los_Angeles"
+		}
+
+		// Queries lang and city if args length is 5
+	case 5:
+		switch os.Args[1] {
+		case "city":
+			if err := cityFlagCMD.Parse(os.Args[2:3]); err != nil {
+				log.Println("Cannot parse cmd flag", err)
+			}
+
+		case "lang":
+			if err := langFlagCMD.Parse(os.Args[2:3]); err != nil {
+				log.Println("Cannot parse cmd flag", err)
+			}
+
+		}
+
+		switch os.Args[3] {
+		case "city":
+			if err := cityFlagCMD.Parse(os.Args[4:]); err != nil {
+				log.Println("Cannot parse cmd flag", err)
+			}
+
+		case "lang":
+			if err := langFlagCMD.Parse(os.Args[4:]); err != nil {
+				log.Println("Cannot parse cmd flag", err)
+			}
+
+		}
+		if cityFlagCMD.Parsed() {
+			if *cityData == "" {
+				fmt.Println("city error")
+				os.Exit(1)
+			}
+			q = *cityData
+		}
+		if langFlagCMD.Parsed() {
+			if *langData == "" {
+				fmt.Println("lang error")
+				os.Exit(1)
+			}
+			ql = *langData
+		}
 
 	}
-	if cityFlagCMD.Parsed() {
-		if *cityData == "" {
-			os.Exit(1)
-		}
-		q = *cityData
-	}
-
-	// Gets language
-	switch os.Args[3] {
-	case "lang":
-		err := langFlagCMD.Parse(os.Args[4:])
-		if err != nil {
-			log.Fatal(err)
-		}
-	default:
-		*langData = "en"
-	}
-
-	if langFlagCMD.Parsed() {
-		if *langData == "" {
-			os.Exit(1)
-		}
-		ql = *langData
-	}
-
 }
 
 // Find day of the week
