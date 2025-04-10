@@ -69,6 +69,7 @@ func main() {
 		q = "Los_Angeles"
 		ql = "en"
 	}
+
 	weatherReport()
 
 }
@@ -191,13 +192,22 @@ func outputData(body []byte) {
 				uvText,
 			)
 
+			sunsetLang, ok := translationsSunset[ql]
+			if !ok {
+				sunsetLang = "Sunset"
+			}
+			sunriseLang, ok := translationsSunrise[ql]
+			if !ok {
+				sunriseLang = "Sunrise"
+			}
+
 			// Display weather report with sunrise time
 			if parsedSunriseTime.Hour() == date.Hour() {
 
 				// Output normal weather report
 				chanceOfRain(output, hour.ChanceOfRain)
 
-				color.RGB(255, 165, 0).Println("Sunrise: " + parsedSunriseTime.Format("15:04"))
+				color.RGB(255, 165, 0).Println(sunriseLang + " " + parsedSunriseTime.Format("15:04"))
 
 				// Display weather report wtih sunset time
 			} else if parsedSunsetTime.Hour() == date.Hour() {
@@ -205,7 +215,7 @@ func outputData(body []byte) {
 				// Output normal weather report
 				chanceOfRain(output, hour.ChanceOfRain)
 
-				color.RGB(160, 32, 240).Println("Sunset: " + parsedSunsetTime.Format("15:04"))
+				color.RGB(160, 32, 240).Println(sunsetLang + " " + parsedSunsetTime.Format("15:04"))
 
 			} else {
 				// Output normal weather report
@@ -391,4 +401,90 @@ func chanceOfRain(output string, rain float64) {
 	} else {
 		fmt.Println(color.GreenString(output))
 	}
+}
+
+var translationsSunset = map[string]string{
+	"ar":     "غروب",
+	"bn":     "সূর্যাস্ত",
+	"bg":     "Залез",
+	"zh":     "日落",
+	"zh_tw":  "日落",
+	"cs":     "Západ slunce",
+	"da":     "Solnedgang",
+	"nl":     "Zonsondergang",
+	"fi":     "Auringonlasku",
+	"fr":     "Coucher de soleil",
+	"de":     "Sonnenuntergang",
+	"el":     "Ηλιοβασίλεμα",
+	"hi":     "सूर्यास्त",
+	"hu":     "Napnyugta",
+	"it":     "Tramonto",
+	"ja":     "日没",
+	"jv":     "Sunset",
+	"ko":     "일몰",
+	"zh_cmn": "日落",
+	"mr":     "सूर्यास्त",
+	"pl":     "Zachód słońca",
+	"pt":     "Por do sol",
+	"pa":     "ਸੂਰਜ ਡੁੱਬਣ",
+	"ro":     "Apus de soare",
+	"ru":     "Закат",
+	"sr":     "Залазак сунца",
+	"si":     "හිරු බැස යෑමයි",
+	"sk":     "Západ slnka",
+	"es":     "Atardecer",
+	"sv":     "Solnedgång",
+	"ta":     "சூரிய அஸ்தமனம்",
+	"te":     "సూర్యాస్తమయం",
+	"tr":     "Gün batımı",
+	"uk":     "Захід сонця",
+	"ur":     "غروب آفتاب",
+	"vi":     "Hoàng hôn",
+	"zh_wuu": "晚霞",
+	"zh_hsn": "夕阳",
+	"zh_yue": "日落",
+	"zu":     "Ukushona kwelanga",
+}
+
+var translationsSunrise = map[string]string{
+	"ar":     "شروق الشمس",
+	"bn":     "সূর্যোদয়",
+	"bg":     "Изгрев",
+	"zh":     "日出",
+	"zh_tw":  "日出",
+	"cs":     "Východ slunce",
+	"da":     "Solopgang",
+	"nl":     "Zonsopgang",
+	"fi":     "Auringonnousu",
+	"fr":     "Lever du soleil",
+	"de":     "Sonnenaufgang",
+	"el":     "Ανατολή ηλίου",
+	"hi":     "सूर्योदय",
+	"hu":     "Napkelte",
+	"it":     "Alba",
+	"ja":     "日の出",
+	"jv":     "Srengenge munggah",
+	"ko":     "일출",
+	"zh_cmn": "日出",
+	"mr":     "सूर्योदय",
+	"pl":     "Wschód słońca",
+	"pt":     "Nascer do sol",
+	"pa":     "ਸੂਰਜ ਚੜ੍ਹਨਾ",
+	"ro":     "Răsărit",
+	"ru":     "Восход",
+	"sr":     "Излазак сунца",
+	"si":     "සඳළුව",
+	"sk":     "Východ slnka",
+	"es":     "Amanecer",
+	"sv":     "Soluppgång",
+	"ta":     "சூரிய உதயம்",
+	"te":     "సూర్యోదయం",
+	"tr":     "Gün doğumu",
+	"uk":     "Схід сонця",
+	"ur":     "طلوع آفتاب",
+	"vi":     "Bình minh",
+	"zh_wuu": "日出",
+	"zh_hsn": "日出",
+	"zh_yue": "日出",
+	"zu":     "Ukuphuma kwelanga",
 }
