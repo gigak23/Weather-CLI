@@ -13,19 +13,17 @@ import (
 	"time"
 
 	"github.com/fatih/color"
+	"github.com/joho/godotenv"
 )
-
-/*
-
-GOAL: FILTER SPECIFIC CITIES BY COUNTRY IN CASE OF DUPLICATE CITIES
-
-*/
 
 // Global query value
 var q string
 
 // Global lang value
 var ql string
+
+// Global struct data value
+var w Weather
 
 // Weather data
 type Weather struct {
@@ -70,13 +68,21 @@ func main() {
 		ql = "en"
 	}
 
-	weatherReport()
+	w.weatherReport()
 
 }
 
 // Get weather data
-func weatherReport() {
-	res, err := http.Get("https://api.weatherapi.com/v1/forecast.json?key=d48c3d2b3bad49b7af7180920252603&q=" + q + "&days=7&aqi=no&alerts=yes&lang=" + ql)
+func (w *Weather) weatherReport() {
+
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
+	key := os.Getenv("API_KEY")
+
+	res, err := http.Get("https://api.weatherapi.com/v1/forecast.json?key=" + key + "&q=" + q + "&days=7&aqi=no&alerts=yes&lang=" + ql)
 
 	if err != nil {
 		panic(err)
@@ -98,14 +104,12 @@ func weatherReport() {
 		fmt.Println("Error writing to file:", err)
 	}
 
-	outputData(body)
+	w.outputData(body)
 
 }
 
 // Output weather data
-func outputData(body []byte) {
-
-	var w Weather
+func (w *Weather) outputData(body []byte) {
 
 	err := json.Unmarshal(body, &w)
 	if err != nil {
@@ -120,7 +124,7 @@ func outputData(body []byte) {
 	}
 	now := time.Now().In(locTZ)
 
-	d := "7-day Forecast"
+	d := "3-day Forecast"
 	f := fmt.Sprintf("\n%s\n", d)
 	color.Cyan(f)
 
@@ -136,7 +140,7 @@ func outputData(body []byte) {
 	for day := range w.Forecast.Forecastday {
 
 		d, hours, sun := w.Forecast.Forecastday[day].Date, w.Forecast.Forecastday[day].Hour, w.Forecast.Forecastday[day].Astro
-		weekDay := dayOfTheWeek(d)
+		weekDay := dayOfTheWeek(d, ql)
 		fmt.Println()
 		fmt.Println(weekDay)
 		fmt.Println()
@@ -323,7 +327,7 @@ func setQueryValue() {
 }
 
 // Find day of the week
-func dayOfTheWeek(date string) string {
+func dayOfTheWeek(date string, langCode string) string {
 
 	t := []int{0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4}
 
@@ -347,27 +351,22 @@ func dayOfTheWeek(date string) string {
 	}
 
 	dayValue := (year + year/4 - year/100 + year/400 + t[month-1] + day) % 7
-	var weekDay string
-
-	switch dayValue {
-	case 0:
-		weekDay = "Sunday"
-	case 1:
-		weekDay = "Monday"
-	case 2:
-		weekDay = "Tuesday"
-	case 3:
-		weekDay = "Wednesday"
-	case 4:
-		weekDay = "Thursday"
-	case 5:
-		weekDay = "Friday"
-	case 6:
-		weekDay = "Saturday"
-	}
+	weekDay := findLanguageWeekday(langCode, dayValue)
 
 	return weekDay
 
+}
+
+// Get specific weekday in terms of the language code
+func findLanguageWeekday(langCode string, dayValue int) string {
+	for lang := range translationsWeekdays {
+		if lang == langCode {
+			t := translationsWeekdays[lang][dayValue]
+			return t
+		}
+	}
+
+	return ""
 }
 
 // Specify color for UV-Index
@@ -403,6 +402,37 @@ func chanceOfRain(output string, rain float64) {
 	}
 }
 
+// Map of weekdays in specified langauge
+var translationsWeekdays = map[string][]string{
+	"en": {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"},
+	"ar": {"الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"},
+	"bn": {"রবিবার", "সোমবার", "মঙ্গলবার", "বুধবার", "বৃহস্পতিবার", "শুক্রবার", "শনিবার"},
+	"bg": {"Неделя", "Понеделник", "Вторник", "Сряда", "Четвъртък", "Петък", "Събота"},
+	"zh": {"星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"},
+	"cs": {"Neděle", "Pondělí", "Úterý", "Středa", "Čtvrtek", "Pátek", "Sobota"},
+	"da": {"Søndag", "Mandag", "Tirsdag", "Onsdag", "Torsdag", "Fredag", "Lørdag"},
+	"nl": {"Zondag", "Maandag", "Dinsdag", "Woensdag", "Donderdag", "Vrijdag", "Zaterdag"},
+	"fi": {"Sunnuntai", "Maanantai", "Tiistai", "Keskiviikko", "Torstai", "Perjantai", "Lauantai"},
+	"fr": {"Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"},
+	"de": {"Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"},
+	"el": {"Κυριακή", "Δευτέρα", "Τρίτη", "Τετάρτη", "Πέμπτη", "Παρασκευή", "Σάββατο"},
+	"hi": {"रविवार", "सोमवार", "मंगलवार", "बुधवार", "गुरुवार", "शुक्रवार", "शनिवार"},
+	"hu": {"Vasárnap", "Hétfő", "Kedd", "Szerda", "Csütörtök", "Péntek", "Szombat"},
+	"it": {"Domenica", "Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato"},
+	"ja": {"日曜日", "月曜日", "火曜日", "水曜日", "木曜日", "金曜日", "土曜日"},
+	"ko": {"일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"},
+	"pl": {"Niedziela", "Poniedziałek", "Wtorek", "Środa", "Czwartek", "Piątek", "Sobota"},
+	"pt": {"Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"},
+	"ro": {"Duminică", "Luni", "Marți", "Miercuri", "Joi", "Vineri", "Sâmbătă"},
+	"ru": {"Воскресенье", "Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота"},
+	"es": {"Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"},
+	"sv": {"Söndag", "Måndag", "Tisdag", "Onsdag", "Torsdag", "Fredag", "Lördag"},
+	"tr": {"Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi"},
+	"uk": {"Неділя", "Понеділок", "Вівторок", "Середа", "Четвер", "П’ятниця", "Субота"},
+	"vi": {"Chủ Nhật", "Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy"},
+}
+
+// Map of the word sunset in specified language
 var translationsSunset = map[string]string{
 	"ar":     "غروب",
 	"bn":     "সূর্যাস্ত",
@@ -446,6 +476,7 @@ var translationsSunset = map[string]string{
 	"zu":     "Ukushona kwelanga",
 }
 
+// Map of the word sunrise in specified language
 var translationsSunrise = map[string]string{
 	"ar":     "شروق الشمس",
 	"bn":     "সূর্যোদয়",
