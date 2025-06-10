@@ -18,12 +18,17 @@ A simple and customizable command-line interface (CLI) tool built in Go that fet
 - Go 1.18 or later
 - Set your API key via environment variable:
 
+bash
 ```bash
 export WEATHER_API_KEY="your_api_key_here"
 ```
-
+powershell
 ```powershell
 $env:WEATHER_API_KEY="your_api_key_here"
+```
+cmd
+```cmd
+set WEATHER_API_KEY=your_api_key_here
 ```
 
 ---
